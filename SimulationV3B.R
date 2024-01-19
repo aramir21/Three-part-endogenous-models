@@ -24,6 +24,9 @@ SIGMA <- rho*matrix(c(1,0.6,0.4,0.5,0.4,0.2,0,0,0,0.6,1,0.5,0.4,0.3,0.4,0,0,0,0.
                       0.5,0.3,0.5,0,0,0,0.5,0.4,0.5,1,0.4,0.5,0.3,0.4,0.2,0.4,0.3,0.3,0.4,1,
                       0.4,0.3,0.3,0.1,0.2,0.4,0.5,0.5,0.4,1,0.5,0.3,0.1,0,0,0,0.3,0.3,0.5,1,0.6,
                       0.4,0,0,0,0.4,0.3,0.3,0.6,1,0.3,0,0,0,0.2,0.1,0.1,0.4,0.3,1), 3*J, 3*J)
+SIGMA13 <- matrix(c(0.3, 0.2, 0.3, 0.1, 0.4, 0.2, 0.4, 0.3, 0.2), 3, 3) 
+SIGMA[1:3,7:9] <- SIGMA13
+SIGMA[7:9,1:3] <- t(SIGMA13)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
@@ -402,7 +405,7 @@ while(rep <= Rep){
     ThetaPost[s,] <- c(THETASp12, THETASp34, THETASp56, THETASp79, THETASp02, THETASp35,THETAp[-c(1:15)])
     SigmaPost[,,s] <- SIGMApNew
     ThetaPostNOst[s,] <- THETAp
-    SigmaPostNOst[,,s] <- SIGMASpProbV1
+    SigmaPostNOst[,,s] <- SIGMAp #SIGMASpProbV1
     AClPost[,,s] <- AClp
     # tocks <- Sys.time()
     # print(tocks-ticks)
@@ -426,7 +429,7 @@ while(rep <= Rep){
   
   PostResults <- list(THETApost = THETApost, SIGMApost = SIGMApost, THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
-  save(PostResults, file = "PostResultsV3BnewV1.RData")
+  save(PostResults, file = "PostResultsV3BnewV2.RData")
   print(rep)
   tock <- Sys.time()
   print(tock-tick)
