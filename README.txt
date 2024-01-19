@@ -1,4 +1,4 @@
-Files
+Files to perform simulations and applications of three-part endogenous models
 1) SimulationV3B.R --> 
 	DGP: Three part incidental truncation dependence between access, selection and outcome equations with diferent regressors in the three stages, although same regressors for each variable within each stage
 	Estimation as DGP
