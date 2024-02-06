@@ -24,6 +24,9 @@ SIGMA <- rho*matrix(c(1,0.6,0.4,0.5,0.4,0.2,0,0,0,0.6,1,0.5,0.4,0.3,0.4,0,0,0,0.
                       0.5,0.3,0.5,0,0,0,0.5,0.4,0.5,1,0.4,0.5,0.3,0.4,0.2,0.4,0.3,0.3,0.4,1,
                       0.4,0.3,0.3,0.1,0.2,0.4,0.5,0.5,0.4,1,0.5,0.3,0.1,0,0,0,0.3,0.3,0.5,1,0.6,
                       0.4,0,0,0,0.4,0.3,0.3,0.6,1,0.3,0,0,0,0.2,0.1,0.1,0.4,0.3,1), 3*J, 3*J)
+SIGMA13 <- matrix(c(0.3, 0.2, 0.3, 0.1, 0.4, 0.2, 0.4, 0.3, 0.2), 3, 3) 
+SIGMA[1:3,7:9] <- SIGMA13
+SIGMA[7:9,1:3] <- t(SIGMA13)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
@@ -344,6 +347,7 @@ ThetaPost <- matrix(NA, S, K + L)
 SigmaPost <- array(NA, c(2*J, 2*J, S))
 ThetaPostNOst <- matrix(NA, S, K + L)
 SigmaPostNOst <- array(NA, c(2*J, 2*J, S))
+OmegaPostNOst <- array(NA, c(J, J, S))
 ClPost <- array(NA, c(N, J, S))
 findraws <- seq(burnin, S, thin)
 
@@ -356,6 +360,7 @@ SIGMApost <- array(0, c(2*J*(2*J+1)/2, 3, Rep))
 
 THETApostNOst <- array(0, c(K+L, 3, Rep))
 SIGMApostNOst <- array(0, c(2*J*(2*J+1)/2, 3, Rep))
+OMEGApostNOst <- array(0, c(J*(J+1)/2, 3, Rep))
 
 
 rep <- 1
@@ -465,11 +470,12 @@ while(rep <= Rep){
     
     AlphaPost[s,] <- c(ALPHASp12,ALPHASp34,ALPHASp56)
     OmegaPost[,,s] <- OMEGASp
+    OmegaPostNOst[,,s] <- OMEGAp
     AlPost[,,s] <- Alp
     ThetaPost[s,] <- c(THETASp13, THETASp46, THETASp79, THETAp[-c(1:9)])
     SigmaPost[,,s] <- SIGMApNew
     ThetaPostNOst[s,] <- THETAp
-    SigmaPostNOst[,,s] <- SIGMASpProbV1
+    SigmaPostNOst[,,s] <- SIGMAp
     ClPost[,,s] <- Clp
     # tocks <- Sys.time()
     # print(tocks-ticks)
@@ -483,6 +489,10 @@ while(rep <= Rep){
   OmegaHatVech <- coda::mcmc(t(sapply(1:S, function(s){matrixcalc::vech(OmegaPost[,,s])})))
   RestOmega <- summary(coda::mcmc(OmegaHatVech[findraws,]))
   OMEGApost[,,rep] <- cbind(RestOmega$statistics[,1], RestOmega$quantiles[,c(1,5)]) 
+  
+  OmegaHatVechNOst <- coda::mcmc(t(sapply(1:S, function(s){matrixcalc::vech(OmegaPostNOst[,,s])})))
+  RestOmegaNOst <- summary(coda::mcmc(OmegaHatVechNOst[findraws,]))
+  OMEGApostNOst[,,rep] <- cbind(RestOmegaNOst$statistics[,1], RestOmegaNOst$quantiles[,c(1,5)]) 
   
   thetaHat <- coda::mcmc(ThetaPost[findraws,])
   RestTheta <- summary(thetaHat)
@@ -501,10 +511,11 @@ while(rep <= Rep){
   SIGMApostNOst[,,rep] <- cbind(RestSigmaNOst$statistics[,1], RestSigmaNOst$quantiles[,c(1,5)]) 
   
   PostResults <- list(ALPHApost = ALPHApost, THETApost = THETApost,
-                      OMEGApost = OMEGApost, SIGMApost = SIGMApost, 
+                      OMEGApost = OMEGApost, SIGMApost = SIGMApost,
+                      OMEGApostNOst = OMEGApostNOst,
                       THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
-  save(PostResults, file = "PostResultsV2CnewV1.RData")
+  save(PostResults, file = "PostResultsV2CnewV2.RData")
   print(rep)
   tock <- Sys.time()
   print(tock-tick)
