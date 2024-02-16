@@ -82,7 +82,7 @@ IntLengthSigmanew <- sapply(1:length(SIGMApop), function(i){mean(apply(cbind(SIG
 
 ####################################################################
 rm(list = ls())
-load("PostResultsV2CnewV1.RData")
+load("PostResultsV2CnewV2.RData")
 ##### Multivariate probit: Access #####
 a1 <- c(1, -1)
 a2 <- c(0.8, -1.2)
@@ -93,11 +93,10 @@ SIGMA <- rho*matrix(c(1,0.6,0.4,0.5,0.4,0.2,0,0,0,0.6,1,0.5,0.4,0.3,0.4,0,0,0,0.
                       0.5,0.3,0.5,0,0,0,0.5,0.4,0.5,1,0.4,0.5,0.3,0.4,0.2,0.4,0.3,0.3,0.4,1,
                       0.4,0.3,0.3,0.1,0.2,0.4,0.5,0.5,0.4,1,0.5,0.3,0.1,0,0,0,0.3,0.3,0.5,1,0.6,
                       0.4,0,0,0,0.4,0.3,0.3,0.6,1,0.3,0,0,0,0.2,0.1,0.1,0.4,0.3,1), 3*J, 3*J)
-OMEGA <- SIGMA[1:3,1:3]
-OMEGApop <- matrixcalc::vech(OMEGA)
-
-SIGMAnew <- SIGMA[4:9,4:9]
-SIGMApop <- matrixcalc::vech(SIGMAnew)
+SIGMA13 <- matrix(c(0.3, 0.2, 0.3, 0.1, 0.4, 0.2, 0.4, 0.3, 0.2), 3, 3) 
+SIGMA[1:3,7:9] <- SIGMA13
+SIGMA[7:9,1:3] <- t(SIGMA13)
+SIGMApop <- vech(SIGMA)
 ##### Multivariate probit: Selection #####
 b1 <- c(1, 1, -0.5)
 b2 <- c(0.5, 1.5, -1)
@@ -108,62 +107,51 @@ d1 <- c(1, 1.7, 1.5)
 d2 <- c(1, 2, 2)
 d3 <- c(1, 1.5, 1.8)
 
-THETApop <- c(a1, a2, a3, b1, b2, b3, d1, d2, d3)
-THETAhat <- c(rowMeans(PostResults$ALPHApost[,1,]), rowMeans(PostResults$THETApost[,1,]))
+ALPHApop <- c(a1, a2, a3)
+THETApop <- c(b1, b2, b3, d1, d2, d3)
+ALPHAhat <- rowMeans(PostResults$ALPHApost[,1,])
+THETAhat <- rowMeans(PostResults$THETApost[,1,])
+cbind(ALPHApop, ALPHAhat)
 cbind(THETApop, THETAhat)
-OMEGAhat <- PostResults$OMEGApost[,1,]
-cbind(OMEGApop, rowMeans(OMEGAhat))
-
-SIGMAhat <- PostResults$SIGMApostNOst[,1,]
-cbind(SIGMApop, rowMeans(SIGMAhat))
 
 RMSEfunct <- function(pop, pars){
   RMSE <- (mean(sapply(1:length(pars), function(i){(pop-pars[i])^2})))^0.5
   return(RMSE)
 }
-THETApop <- c(b1, b2, b3, d1, d2, d3)
-RMSETheta <- sapply(1:length(THETApop), function(i){RMSEfunct(THETApop[i],PostResults$THETApost[i,1,])}) 
-ALPHApop <- c(a1, a2, a3)
-RMSEAlpha <- sapply(1:length(ALPHApop), function(i){RMSEfunct(ALPHApop[i],PostResults$ALPHApost[i,1,])}) 
 
-RMSEOmega <- sapply(1:length(OMEGApop), function(i){RMSEfunct(OMEGApop[i],PostResults$OMEGApost[i,1,])}) 
-RMSESigma <- sapply(1:length(SIGMApop), function(i){RMSEfunct(SIGMApop[i],PostResults$SIGMApost[i,1,])}) 
+RMSEAlpha1 <- sapply(1:length(ALPHApop), function(i){RMSEfunct(ALPHApop[i],PostResults$ALPHApost[i,1,])})
+RMSETheta1 <- sapply(1:length(THETApop), function(i){RMSEfunct(THETApop[i],PostResults$THETApost[i,1,])}) 
+RMSE1 <- cbind(RMSETheta, c(RMSEAlpha1, RMSETheta1))
 
 MAPEfunct <- function(pop, pars){
   MAPE <- mean(sapply(1:length(pars), function(i){abs((pop-pars[i])/pop)}))
   return(MAPE)
 }
-MAPETheta <- sapply(1:length(THETApop), function(i){MAPEfunct(THETApop[i],PostResults$THETApost[i,1,])}) 
-max(MAPETheta)
-MAPESigma <- sapply(1:length(SIGMApop), function(i){MAPEfunct(SIGMApop[i],PostResults$SIGMApost[i,1,])}) 
-max(MAPESigma)
-MAPEAlpha <- sapply(1:length(ALPHApop), function(i){MAPEfunct(ALPHApop[i],PostResults$ALPHApost[i,1,])}) 
-max(MAPEAlpha)
-MAPEOmega <- sapply(1:length(OMEGApop), function(i){MAPEfunct(OMEGApop[i],PostResults$OMEGApost[i,1,])}) 
-max(MAPEOmega)
+MAPETheta1 <- sapply(1:length(THETApop), function(i){MAPEfunct(THETApop[i],PostResults$THETApost[i,1,])}) 
+MAPEAlpha1 <- sapply(1:length(ALPHApop), function(i){MAPEfunct(ALPHApop[i],PostResults$ALPHApost[i,1,])}) 
+MAPE1 <- cbind(MAPETheta, c(MAPEAlpha1, MAPETheta1))
 
 CovFunct <- function(pars){
-  if(pars[1]<= pars[2] & pars[3] >= pars[2]){
+  if(pars[1]<= pars[2] && pars[3] >= pars[2]){
+    #if(pars[1]-0.001<= pars[2] && pars[3]+0.001 >= pars[2]){ # To avoid problems due to numerical approximation in cor. coef. = 1 in corr matrix
     Cov <- 1
   }else{
     Cov <- 0
   }
   return(Cov)
 }
-CoverageTheta <- sapply(1:length(THETApop), function(i){mean(apply(cbind(PostResults$THETApost[i,2,],THETApop[i],PostResults$THETApost[i,3,]), 1, CovFunct))})
-CoverageSigma <- sapply(1:length(SIGMApop), function(i){mean(apply(cbind(PostResults$SIGMApost[i,2,],SIGMApop[i],PostResults$SIGMApost[i,3,]), 1, CovFunct))})
-CoverageAlpha <- sapply(1:length(ALPHApop), function(i){mean(apply(cbind(PostResults$ALPHApost[i,2,],ALPHApop[i],PostResults$ALPHApost[i,3,]), 1, CovFunct))})
-CoverageOmega <- sapply(1:length(OMEGApop), function(i){mean(apply(cbind(PostResults$OMEGApost[i,2,],OMEGApop[i],PostResults$OMEGApost[i,3,]), 1, CovFunct))})
+CoverageTheta1 <- sapply(1:length(THETApop), function(i){mean(apply(cbind(PostResults$THETApost[i,2,],THETApop[i],PostResults$THETApost[i,3,]), 1, CovFunct))})
+CoverageAlpha1 <- sapply(1:length(ALPHApop), function(i){mean(apply(cbind(PostResults$ALPHApost[i,2,],ALPHApop[i],PostResults$ALPHApost[i,3,]), 1, CovFunct))})
+Cov1 <- cbind(CoverageTheta, c(CoverageAlpha1, CoverageTheta1))
 
 LengthFunct <- function(pars){
   leng <- abs(pars[2]-pars[1])
   return(leng)
 }
-IntLengthTheta <- sapply(1:length(THETApop), function(i){mean(apply(cbind(PostResults$THETApost[i,2,],PostResults$THETApost[i,3,]), 1, LengthFunct))})
-IntLengthSigma <- sapply(1:length(SIGMApop), function(i){mean(apply(cbind(PostResults$SIGMApost[i,2,],PostResults$SIGMApost[i,3,]), 1, LengthFunct))})
-IntLengthAlpha <- sapply(1:length(ALPHApop), function(i){mean(apply(cbind(PostResults$ALPHApost[i,2,],PostResults$ALPHApost[i,3,]), 1, LengthFunct))})
-IntLengthOmega <- sapply(1:length(OMEGApop), function(i){mean(apply(cbind(PostResults$OMEGApost[i,2,],PostResults$OMEGApost[i,3,]), 1, LengthFunct))})
-
+IntLengthTheta1 <- sapply(1:length(THETApop), function(i){mean(apply(cbind(PostResults$THETApost[i,2,],PostResults$THETApost[i,3,]), 1, LengthFunct))})
+IntLengthAlpha1 <- sapply(1:length(ALPHApop), function(i){mean(apply(cbind(PostResults$ALPHApost[i,2,],PostResults$ALPHApost[i,3,]), 1, LengthFunct))})
+RatioLength1 <- c(IntLengthTheta1, IntLengthAlpha1)/IntLengthTheta
+cbind(RMSE1, MAPE1, Cov1, RatioLength1)
 
 ####################################################################
 rm(list = ls())
