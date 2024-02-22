@@ -2,56 +2,40 @@
 ############## Estimation assuming endogenous access #############
 # Andrés Ramírez Hassan
 # Febraury 1st, 2023
-
-##### Multivariate probit: Selection #####
 rm(list = ls())
 set.seed(010101)
 library(doParallel)
 library(snow)
 N <- 2500 # 20000
 J <- 1
-Jdgp <- 3
-h1 <- 2 # Dim(Tj), see below
-H <- h1  # Dim(T), see below
+h1 <- 3 # Dim(Tj), see below
+H <- h1 # Dim(T), see below
 k1 <- 3 # Dim(Bj), See below
-K <- k1  # Dim(B), See below
-l1 <- 3 # Dim(Dj), See below
-L <- l1  # Dim(D), See below
+K <- k1 # Dim(B), See below
+l1 <- 3 #  Dim(Dj), See below
+L <- l1 # Dim(D), See below
 
 ##### Multivariate probit: Access #####
-a1 <- c(1, -1)
-a2 <- c(0.8, -1.2)
-a3 <- c(1.1, -0.7)
+a1 <- c(1, -1, 1)
+
 rho <- 1
-SIGMAdgp <- rho*matrix(c(1,0.6,0.4,0.5,0.4,0.2,0,0,0,0.6,1,0.5,0.4,0.3,0.4,0,0,0,0.4,0.5,1,
-                      0.5,0.3,0.5,0,0,0,0.5,0.4,0.5,1,0.4,0.5,0.3,0.4,0.2,0.4,0.3,0.3,0.4,1,
-                      0.4,0.3,0.3,0.1,0.2,0.4,0.5,0.5,0.4,1,0.5,0.3,0.1,0,0,0,0.3,0.3,0.5,1,0.6,
-                      0.4,0,0,0,0.4,0.3,0.3,0.6,1,0.3,0,0,0,0.2,0.1,0.1,0.4,0.3,1), 3*Jdgp, 3*Jdgp)
-SIGMA13dgp <- matrix(c(0.3, 0.2, 0.3, 0.1, 0.4, 0.2, 0.4, 0.3, 0.2), 3, 3) 
-SIGMAdgp[1:3,7:9] <- SIGMA13dgp
-SIGMAdgp[7:9,1:3] <- t(SIGMA13dgp)
-
-
-SIGMA <- rho*matrix(c(1,0.5,0.3,0.5, 1, 0.3, 0.3, 0.3, 1), 3*J, 3*J)
+SIGMA <- rho*matrix(c(1,0.7,0.6,0.7,1, 0.8, 0.6, 0.8, 1), 3*J, 3*J)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
-b1 <- c(1, 1, -0.5)
-b2 <- c(0.5, 1.5, -1)
-b3 <- c(1, 1, -1)
+b1 <- c(1, -0.5, 0.5)
 
 # Groups: 3^J
 Comb <- matrix(c(0, 0, 1, 0, 1, 1), byrow = TRUE, 3, 2) # Combination access/use: First column is access and second is use 
 CombNew <- Comb
 
 ##### SUR: Outcome #####
-d1 <- c(1, 1.7, 1.5)
-d2 <- c(1, 2, 2)
-d3 <- c(1, 1.5, 1.8)
+d1 <- c(1, -0.5, 1)
 
 THETA <- c(a1, b1, d1)
 #### Data preparation ####
 IJ <- diag(J)
+CJ1 <- matrix(0, J, 2*J)
 CJ <- matrix(0, J, J)
 WJ <- matrix(0, J, K+L)
 ZJ1 <- matrix(0, J, H)
@@ -65,15 +49,25 @@ d0 <- rep(0, L)
 t0 <- c(a0, b0, d0)
 T0 <- 1000*diag(H+K+L)
 T0i <- solve(T0)
-r0 <- J + 2
+r0 <- 3*J + 2
 R0 <- diag(H+K+L)
 R0A <- diag(J)
 
 #### Gibbs sampler: Functions ####
 PostTheta <- function(Sigma, Al, Cl, A, C, Y, WZX){
-  # Sigma = SIGMA
-  # Al = Al
-  # Cl = Cl
+  #W : regressors access equation
+  #Z : regressors use equation
+  #X : regressors quantity equation
+  #Y : quantity
+  #A : Binary access
+  #C : Binary use
+  #Sigma: Covariance matrix (parameter)
+  #Al: Latent access (parameter)
+  #Cl: Latent use (parameter)
+  # 
+  # Sigma = SIGMAp
+  # Al = Alp
+  # Cl = Clp
   # A = A
   # C = C
   # Y = Y
@@ -82,10 +76,11 @@ PostTheta <- function(Sigma, Al, Cl, A, C, Y, WZX){
   WY <- cbind(Al, Cl, Y)
   XtX <- matrix(0, H+K+L, H+K+L)
   Xtwy <- matrix(0, H+K+L, 1)
-  ids <- cumsum(c(1,c(h1,k1,l1)))
+  ids <- cumsum(c(1,c(H,K,L)))
   for(m in 1:3^J){
     idGood <- c(1,which(CombNew[m,]==1)+1)
-    JJ <- matrix(0, H+K+L, H+(length(idGood)-1)*K) # This assumes K = L. Be carefull in application
+    columns <- sum(c(H,K,L)*c(rep(1,length(idGood)),rep(0,(3-length(idGood)))))
+    JJ <- matrix(0, H+K+L, columns) # This assumes K = L. Be carefull!!!
     idcov <- NULL
     for(l in 1:length(idGood)){
       idscol <- ids[l]:(ids[l+1]-1)
@@ -214,10 +209,10 @@ PostACl <- function(m, theta, Sigma, ACli, Yi, Ai, Ci, WZXi){
       mij <- WZXi[j,]%*%theta
       sdij <- Sigma[j,j]
       ACli[j] <- EnvStats::rnormTrunc(1, mean = mij, sd = sdij^0.5, min = lb, max = ub)
-      if(ACli[j] <= -20){ # Computational issues
+      if(ACli[j] <= -20){ # To solve computational issues
         ACli[j] <- -20
       }
-      if(ACli[j] >= 20){ # Computational issues
+      if(ACli[j] >= 20){ # To solve computational issues
         ACli[j] <- 20
       }
     }
@@ -233,26 +228,27 @@ PostACl <- function(m, theta, Sigma, ACli, Yi, Ai, Ci, WZXi){
       mij <- WZXi[j,]%*%theta + Sigma[j,-c(j,idGoodn)]%*%solve(Sigma[-c(j,idGoodn),-c(j,idGoodn)])%*%(ACYli[-c(j,idGoodn)] - WZXi[-c(j,idGoodn),]%*%theta)
       sdij <- Sigma[j,j]-Sigma[j,-c(j,idGoodn)]%*%solve(Sigma[-c(j,idGoodn),-c(j,idGoodn)])%*%(Sigma[-c(j,idGoodn),j])
       ACli[j] <- EnvStats::rnormTrunc(1, mean = mij, sd = sdij^0.5, min = lb, max = ub)
-      if(ACli[j] <= -20){ # Computational issues
+      if(ACli[j] <= -20){ # To solve computational issues
         ACli[j] <- -20
       }
-      if(ACli[j] >= 20){ # Computational issues
+      if(ACli[j] >= 20){ # To solve computational issues
         ACli[j] <- 20
       }
     }
   }
   return(ACli)
 }
-# i <- 1
+
+# i <- 13
 # m = Gs[i]; theta = THETA; Sigma = SIGMA; ACli = c(Al[i,],Cl[i,]);
 # Yi = Y[i,]; Ai = A[i,]; Ci = C[i,]; WZXi = WZX[[i]]
 # ACliPost <- PostACl(m = 1, theta = THETA, Sigma = SIGMA, ACli = c(Al[i,],Cl[i,]), Yi = Y[i,], Ai = A[i,], Ci = C[i,], WZXi = WZX[[i]])
 # cbind(ACli, ACliPost)
 
 #### Gibbs sampler: Implementation ####
-S <- 5000
+S <- 5000 # 1100
 thin <- 10
-burnin <- 1000
+burnin <- 1000 + thin
 ThetaPost <- matrix(NA, S, H + K + L)
 SigmaPost <- array(NA, c(3*J, 3*J, S))
 ThetaPostNOst <- matrix(NA, S, H + K + L)
@@ -262,22 +258,25 @@ findraws <- seq(burnin, S, thin)
 
 Rep <- 100 
 
+THETApostUnivar <- array(0, c(H+K+L, 3, Rep))
+
 THETApost <- array(0, c(H+K+L, 3, Rep))
 SIGMApost <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
 THETApostNOst <- array(0, c(H+K+L, 3, Rep))
 SIGMApostNOst <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
 
+
 rep <- 1
 
-cn <- detectCores() 
+cn <- 6 # detectCores() # 6
 cl <- makeCluster(cn, type = "SOCK")
 registerDoParallel(cl)
 
-W <- cbind(1, rnorm(N))
-# Z <- cbind(W, rnorm(N))
-Z <- cbind(1, rnorm(N), rnorm(N))
-# X <- cbind(W, rnorm(N, 0, 1))
-X <- cbind(1, rnorm(N), rnorm(N, 0, 1))
+wzx <- rnorm(N)
+w1 <- rnorm(N)
+W <- cbind(1, w1, wzx)
+Z <- W # cbind(1, z1, wzx)
+X <- W # cbind(1, x1, wzx)
 
 WW <- lapply(1:N, function(i){cbind(kronecker(IJ, t(W[i, ])), WJ)})
 ZZ <- lapply(1:N, function(i){cbind(ZJ1, kronecker(IJ, t(Z[i, ])), ZJ2)})
@@ -285,31 +284,26 @@ XX <- lapply(1:N, function(i){cbind(XJ, kronecker(IJ, t(X[i, ])))})
 WZ <- lapply(1:N, function(i){rbind(WW[[i]], ZZ[[i]])})
 WZX <- lapply(1:N, function(i){rbind(WW[[i]], ZZ[[i]], XX[[i]])})
 
+
 while(rep <= Rep){
   tick <- Sys.time()
-  U <- MASS::mvrnorm(N, mu = rep(0, 3*Jdgp), Sigma = SIGMAdgp)
+  
+  U <- MASS::mvrnorm(N, mu = rep(0, 3*J), Sigma = SIGMA)
   Al1 <- W%*%a1 + U[, 1]
-  Al2 <- W%*%a2 + U[, 2]
-  Al3 <- W%*%a3 + U[, 3]
   Al <- Al1
   A1 <- Al1 > 0
-  A2 <- Al2 > 0
-  A3 <- Al3 > 0
   A <- A1
   
-  Cl1 <- Z%*%b1 + U[, 4]
-  Cl2 <- Z%*%b2 + U[, 5]
-  Cl3 <- Z%*%b3 + U[, 6]
+  Cl1 <- Z%*%b1 + U[, 2]
   Cl <- Cl1
-  C1 <- Cl1 > 0
-  C2 <- Cl2 > 0
-  C3 <- Cl3 > 0
+  C1o <- Cl1 > 0
+  C1 <- C1o
   C1[which(A1==0)] <- 0
-  C2[which(A2==0)] <- 0
-  C3[which(A3==0)] <- 0
   C <- C1
   AC <- cbind(A1, C1)
-
+  # plot(C1o)
+  # points(C, col = "red")
+  
   Groups <- list()
   Gs <- rep(0, N)
   for(g in 1:dim(Comb)[1]){
@@ -324,15 +318,41 @@ while(rep <= Rep){
     Groups[[g]] <- which(gg == TRUE)
   }
   
-  Y1 <- X%*%d1 + U[, 7]
-  Y2 <- X%*%d2 + U[, 8]
-  Y3 <- X%*%d3 + U[, 9]
-  Y1[which(C1==0)] <- 0
-  Y2[which(C2==0)] <- 0
-  Y3[which(C3==0)] <- 0
+  Yl <- X%*%d1 + U[, 3]
+  Y1 <- Yl
+  Y1[which(C1==0)] <- NA
   Y <- Y1
   CY <- cbind(C, Y)
   ClY <- cbind(Cl, Y)
+  # plot(w1, Yl)
+  # abline(lm(Yl~w1), col = "blue")
+  # points(w1, Y1, col = "red")
+  # abline(lm(Y1~w1), col = "green")
+  # 
+  # la <- dnorm(W%*%a1)/pnorm(W%*%a1)
+  # s2la <- 1 - SIGMA[2,1]^2*la*(W%*%a1+la)
+  # cov(Z[,2]/s2la^0.5,la/s2la^0.5)*SIGMA[2,1]
+  # 
+  # lc <- dnorm(Z%*%b1)/pnorm(Z%*%b1)
+  # cov(X[,2],lc)*SIGMA[3,2]
+  
+  RegA1 <- MCMCprobit(A1 ~ W - 1, mcmc = S - burnin + 10, burnin = burnin, thin = thin,
+                      b0 = 0, B0 = 1000^-1*diag(3))
+  A1Hat <- summary(RegA1)
+  ResA1 <- cbind(A1Hat$statistics[,1], A1Hat$quantiles[,1], A1Hat$quantiles[,5])
+  
+  RegC1 <- MCMCprobit(C1[which(A1==1)] ~ Z[which(A1==1),] - 1, mcmc = S - burnin + 10, burnin = burnin, thin = thin,
+                      b0 = 0, B0 = 1000^-1*diag(3))
+  C1Hat <- summary(RegC1)
+  ResC1 <- cbind(C1Hat$statistics[,1], C1Hat$quantiles[,1], C1Hat$quantiles[,5])
+  
+  RegY1 <- MCMCregress(Y1[which(C1==1)] ~ X[which(C1==1),] - 1, mcmc = S - burnin + 10, burnin = burnin, thin = thin,
+                       b0 = 0, B0 = 1000^-1*diag(3))
+  Y1Hat <- summary(RegY1)
+  ResY1 <- cbind(Y1Hat$statistics[-4,1], Y1Hat$quantiles[-4,1], Y1Hat$quantiles[-4,5])
+  
+  ResUniVar <- rbind(ResA1, ResC1, ResY1)
+  THETApostUnivar[,,rep] <- ResUniVar
   
   SIGMAp <- SIGMA
   THETAp <- THETA
@@ -346,7 +366,7 @@ while(rep <= Rep){
                          "Y", "AClp"))
   
   for(s in 1:S){
-    # ticks <- Sys.time()
+    ticks <- Sys.time()
     clusterExport(cl, list("THETAp", "SIGMAp", "AClp"))
     AClp <- t(parSapply(cl, 1:N, function(i){PostACl(m = Gs[i], theta = THETAp, Sigma = SIGMAp, ACli = AClp[i,], Yi = Y[i,], WZXi = WZX[[i]], Ci = C[i,], Ai = A[i,])}))
     SIGMAp <- PostSig(Theta = THETAp, Al = AClp[,1], Cl = AClp[,2], A = A, C = C, Y = Y, WZX = WZX)
@@ -354,19 +374,19 @@ while(rep <= Rep){
     SIGMApNew <- SIGMAp
     SIGMApNew[1:(2*J),1:(2*J)] <- SIGMASpProb 
     THETAp <- PostTheta(Sigma = SIGMAp, Al = AClp[,1], Cl = AClp[,2], A = A, C = C, Y = Y, WZX = WZX)
-    THETASp12 <- THETAp[1:2]/SIGMAp[1,1]^0.5
-    THETASp34 <- THETAp[3:5]/SIGMAp[2,2]^0.5
+    THETASp12 <- THETAp[1:H]/SIGMAp[1,1]^0.5
+    THETASp34 <- THETAp[(H+1):(H+K)]/SIGMAp[2,2]^0.5
     
-    
-    ThetaPost[s,] <- c(THETASp12, THETASp34,THETAp[-c(1:5)])
+    ThetaPost[s,] <- c(THETASp12, THETASp34,THETAp[-c(1:(H+K))])
     SigmaPost[,,s] <- SIGMApNew
     ThetaPostNOst[s,] <- THETAp
-    SigmaPostNOst[,,s] <- SIGMAp
+    SigmaPostNOst[,,s] <- SIGMAp 
     AClPost[,,s] <- AClp
-    # tocks <- Sys.time()
-    # print(tocks-ticks)
-    # print(s)
+    tocks <- Sys.time()
+    print(tocks-ticks)
+    print(s)
   }
+  
   thetaHat <- coda::mcmc(ThetaPost[findraws,])
   RestTheta <- summary(thetaHat)
   THETApost[,,rep] <- cbind(RestTheta$statistics[,1], RestTheta$quantiles[,c(1,5)]) 
@@ -383,10 +403,9 @@ while(rep <= Rep){
   RestSigmaNOst <- summary(coda::mcmc(SigmaHatVechNOst[findraws,]))
   SIGMApostNOst[,,rep] <- cbind(RestSigmaNOst$statistics[,1], RestSigmaNOst$quantiles[,c(1,5)]) 
   
-  PostResults <- list(THETApost = THETApost, SIGMApost = SIGMApost,
-                      THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
+  PostResults <- list(THETApostUnivar = THETApostUnivar, THETApost = THETApost, SIGMApost = SIGMApost, THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
-  save(PostResults, file = "PostResultsV1CnewV2.RData")
+  save(PostResults, file = "PostResultsOneProduct3StagesNOexcrest.RData")
   print(rep)
   tock <- Sys.time()
   print(tock-tick)
@@ -395,3 +414,4 @@ while(rep <= Rep){
 
 stopCluster(cl)
 
+# load("PostResults.RData")

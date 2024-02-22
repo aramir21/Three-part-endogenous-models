@@ -459,7 +459,6 @@ while(rep <= Rep){
     
     Clp <- t(parSapply(cl, 1:N, function(i){PostCl(m = Gs[i], theta = THETAp, Sigma = SIGMAp, Cli = Clp[i,], Yi = Y[i,], Xi = XX[[i]], Zi = ZZ[[i]], ZXi = ZX[[i]], Ci = C[i,])}))
     SIGMAp <- PostSig(theta = THETAp, Cl = Clp, A = A, C = C, Y = Y, ZZ = ZZ, ZX = ZX)
-    SIGMASpProbV1 <- diag(1/(diag(SIGMAp)^0.5))%*%SIGMAp%*%diag(1/(diag(SIGMAp)^0.5))
     SIGMASpProb <- diag(1/(diag(SIGMAp[1:J,1:J])^0.5))%*%SIGMAp[1:J,1:J]%*%diag(1/(diag(SIGMAp[1:J,1:J])^0.5))
     SIGMApNew <- SIGMAp
     SIGMApNew[1:J,1:J] <- SIGMASpProb 
