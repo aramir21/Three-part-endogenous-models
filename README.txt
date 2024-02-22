@@ -17,3 +17,13 @@ Files to perform simulations and applications of three-part endogenous models
 	Estimation in an univariate setting
 6) AppMarijuanaColV1.R --> Univariate marijuana application
 7) AppSSPPCol.R --> Multivariate SSPP application
+8) SimulationOneProduct3Stages.R -->
+	DGP: ONE PRODUCT Three part incidental truncation dependence between access, selection and outcome equations with diferent regressors in the three stages, although same regressors for each variable within each stage
+	Estimation as DGP
+9) SimulationOneProduct3StagesExAccess.R -->
+	DGP: ONE PRODUCT Three part incidental truncation dependence between access, selection and outcome equations with diferent regressors in the three stages, although same regressors for each variable within each stage
+	Estimation assuming exogenous access
+10) SimulationOneProduct3StagesNOexcRest.R -->
+	DGP: ONE PRODUCT Three part incidental truncation dependence between access, selection and outcome equations with diferent regressors in the three stages, although same regressors for each variable within each stage
+	Estimation without exclusion restrictions
+ 
