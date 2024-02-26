@@ -6,6 +6,7 @@ rm(list = ls())
 set.seed(010101)
 library(doParallel)
 library(snow)
+library(MCMCpack)
 N <- 2500 # 20000
 J <- 1
 h1 <- 3 # Dim(Tj), see below

@@ -11,7 +11,7 @@ library(snow)
 N <- 2500 # 20000
 J <- 1
 Jdgp <- 3
-h1 <- 2 # Dim(Tj), see below
+h1 <- 3 # Dim(Tj), see below
 H <- h1  # Dim(T), see below
 k1 <- 3 # Dim(Bj), See below
 K <- k1  # Dim(B), See below
@@ -19,9 +19,9 @@ l1 <- 3 # Dim(Dj), See below
 L <- l1  # Dim(D), See below
 
 ##### Multivariate probit: Access #####
-a1 <- c(1, -1)
-a2 <- c(0.8, -1.2)
-a3 <- c(1.1, -0.7)
+a1 <- c(1, -1, 1)
+a2 <- c(0.8, -1.2, 0.5)
+a3 <- c(1.1, -0.7, 0.8)
 rho <- 1
 SIGMAdgp <- rho*matrix(c(1,0.6,0.4,0.5,0.4,0.2,0,0,0,0.6,1,0.5,0.4,0.3,0.4,0,0,0,0.4,0.5,1,
                       0.5,0.3,0.5,0,0,0,0.5,0.4,0.5,1,0.4,0.5,0.3,0.4,0.2,0.4,0.3,0.3,0.4,1,
@@ -36,7 +36,7 @@ SIGMA <- rho*matrix(c(1,0.5,0.3,0.5, 1, 0.3, 0.3, 0.3, 1), 3*J, 3*J)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
-b1 <- c(1, 1, -0.5)
+b1 <- c(1, -0.5, 0.5)
 b2 <- c(0.5, 1.5, -1)
 b3 <- c(1, 1, -1)
 
@@ -45,7 +45,7 @@ Comb <- matrix(c(0, 0, 1, 0, 1, 1), byrow = TRUE, 3, 2) # Combination access/use
 CombNew <- Comb
 
 ##### SUR: Outcome #####
-d1 <- c(1, 1.7, 1.5)
+d1 <- c(1, -0.5, 1)
 d2 <- c(1, 2, 2)
 d3 <- c(1, 1.5, 1.8)
 

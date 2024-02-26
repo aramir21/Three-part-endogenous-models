@@ -6,6 +6,7 @@ rm(list = ls())
 set.seed(010101)
 library(doParallel)
 library(snow)
+library(MCMCpack)
 N <- 2500 # 20000
 J <- 1
 h1 <- 3 # Dim(Tj), see below
@@ -145,8 +146,8 @@ PostSig <- function(theta, Cl, Y, C, A, ZZ, ZX){
 # cbind(matrixcalc::vech(Sig11_1), matrixcalc::vech(SIGMA))
 
 PostCl <- function(theta, Sigma, Ai, Ci, Yi, Zi, Xi, Cli){
-  i <- 1
-  Ai <- A[i]; Ci <- C[i]; Yi <- Y[i]; Zi <- Z[i,]; Xi <- X[i,]; Cli <- Cl[i]
+#  i <- 1
+#  Ai <- A[i]; Ci <- C[i]; Yi <- Y[i]; Zi <- Z[i,]; Xi <- X[i,]; Cli <- Cl[i]
   if(Ai == 0){
     Cli <- Cli
   }else{
@@ -203,7 +204,7 @@ SIGMApostNOst <- array(0, c(3, 3, Rep))
 
 rep <- 1
 
-cn <- 6 # detectCores() # 6
+cn <- detectCores() # 6
 cl <- makeCluster(cn, type = "SOCK")
 registerDoParallel(cl)
 
@@ -301,6 +302,7 @@ while(rep <= Rep){
     clusterExport(cl, list("THETAp", "SIGMAp", "Clp"))
     idA <- which(A==1)
     Clp <- t(parSapply(cl, 1:N, function(i){PostCl(theta = THETAp, Sigma = SIGMAp, Ai = A[i], Ci = C[i], Yi = Y[i], Zi = Z[i], Xi = X[i], Cli = Cl[i])}))
+    # Clp <- t(Cl)
     SIGMAp <- PostSig(theta = THETAp, Cl = Clp, Y = Y, C = C, A = A, ZZ = ZZ, ZX = ZX)
     SIGMApNew <- SIGMAp
     SIGMApNew[1,1] <- 1

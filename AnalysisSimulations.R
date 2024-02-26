@@ -8,6 +8,226 @@ library(ggpubr)
 library(reshape2)
 library(data.table)
 
+
+##### Uni-product 3 stages ####
+#1) Baseline
+load("PostResultsOneProduct3Stages.RData")
+J <- 1
+a1 <- c(1, -1, 1)
+b1 <- c(1, -0.5, 0.5)
+d1 <- c(1, -0.5, 1)
+
+rho <- 1
+SIGMA <- rho*matrix(c(1,0.7,0.6,0.7,1, 0.8, 0.6, 0.8, 1), 3*J, 3*J)
+SIGMApop <- vech(SIGMA)
+
+THETApop <- c(a1, b1, d1)
+THETAhat <- PostResults$THETApost[, 1, ]
+cbind(THETApop, rowMeans(THETAhat))
+dist(rbind(THETApop, rowMeans(THETAhat)))
+# SIGMAhat <- PostResults$SIGMApost[,1,]
+SIGMAhat <- sapply(1:100, function(l) {
+  vech(diag(1 / diag(xpnd(PostResults$SIGMApostNOst[, 1, l]))^0.5) %*% xpnd(PostResults$SIGMApostNOst[, 1, l]) %*% diag(1 / diag(xpnd(PostResults$SIGMApostNOst[, 1, l]))^0.5))
+})
+cbind(SIGMApop, rowMeans(SIGMAhat))
+
+RMSEfunct <- function(pop, pars) {
+  RMSE <- (mean(sapply(1:length(pars), function(i) {
+    (pop - pars[i])^2
+  })))^0.5
+  return(RMSE)
+}
+RMSETheta <- sapply(1:length(THETApop), function(i) {
+  RMSEfunct(THETApop[i], PostResults$THETApost[i, 1, ])
+})
+RMSESigma <- sapply(1:length(SIGMApop), function(i) {
+  RMSEfunct(SIGMApop[i], PostResults$SIGMApost[i, 1, ])
+})
+RMSESigmanew <- sapply(1:length(SIGMApop), function(i) {
+  RMSEfunct(SIGMApop[i], SIGMAhat[i, 1])
+})
+cbind(RMSESigma, RMSESigmanew)
+plot(RMSESigma, type = "l")
+lines(RMSESigmanew, col = "red") # It's better to standarized at the end!!!
+
+par(mar = c(1, 1, 1, 1))
+par(mfrow = c(1, 2))
+boxplot(RMSETheta[-c(1, 3, 5, 7, 10, 13, 16, 19, 22)])
+boxplot(RMSETheta)
+
+MAPEfunct <- function(pop, pars) {
+  MAPE <- mean(sapply(1:length(pars), function(i) {
+    abs((pop - pars[i]) / pop)
+  }))
+  return(MAPE)
+}
+MAPETheta <- sapply(1:length(THETApop), function(i) {
+  MAPEfunct(THETApop[i], PostResults$THETApost[i, 1, ])
+})
+max(MAPETheta)
+MAPESigma <- sapply(1:length(SIGMApop), function(i) {
+  MAPEfunct(SIGMApop[i], PostResults$SIGMApost[i, 1, ])
+})
+max(MAPESigma)
+MAPESigmanew <- sapply(1:length(SIGMApop), function(i) {
+  MAPEfunct(SIGMApop[i], SIGMAhat[i, 1])
+})
+max(MAPESigmanew)
+
+CovFunct <- function(pars) {
+  if (pars[1] <= pars[2] && pars[3] >= pars[2]) {
+    # if(pars[1]-0.001<= pars[2] && pars[3]+0.001 >= pars[2]){ # To avoid problems due to numerical approximation in cor. coef. = 1 in corr matrix
+    Cov <- 1
+  } else {
+    Cov <- 0
+  }
+  return(Cov)
+}
+CoverageTheta <- sapply(1:length(THETApop), function(i) {
+  mean(apply(cbind(PostResults$THETApost[i, 2, ], THETApop[i], PostResults$THETApost[i, 3, ]), 1, CovFunct))
+})
+CoverageSigma <- sapply(1:length(SIGMApop), function(i) {
+  mean(apply(cbind(PostResults$SIGMApost[i, 2, ], SIGMApop[i], PostResults$SIGMApost[i, 3, ]), 1, CovFunct))
+})
+SIGMAhatInf <- sapply(1:100, function(l) {
+  vech(diag(1 / diag(xpnd(PostResults$SIGMApostNOst[, 2, l]))^0.5) %*% xpnd(PostResults$SIGMApostNOst[, 2, l]) %*% diag(1 / diag(xpnd(PostResults$SIGMApostNOst[, 2, l]))^0.5))
+})
+SIGMAhatSup <- sapply(1:100, function(l) {
+  vech(diag(1 / diag(xpnd(PostResults$SIGMApostNOst[, 3, l]))^0.5) %*% xpnd(PostResults$SIGMApostNOst[, 3, l]) %*% diag(1 / diag(xpnd(PostResults$SIGMApostNOst[, 3, l]))^0.5))
+})
+
+CoverageSigmanew <- sapply(1:length(SIGMApop), function(i) {
+  mean(apply(cbind(SIGMAhatInf[i, ], SIGMApop[i], SIGMAhatSup[i, ]), 1, CovFunct))
+})
+
+LengthFunct <- function(pars) {
+  leng <- abs(pars[2] - pars[1])
+  return(leng)
+}
+IntLengthThetaBP <- sapply(1:length(THETApop), function(i) {
+  apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct)
+})
+
+IntLengthTheta <- sapply(1:length(THETApop), function(i) {
+  mean(apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct))
+})
+IntLengthSigma <- sapply(1:length(SIGMApop), function(i) {
+  mean(apply(cbind(PostResults$SIGMApost[i, 2, ], PostResults$SIGMApost[i, 3, ]), 1, LengthFunct))
+})
+IntLengthSigmanew <- sapply(1:length(SIGMApop), function(i) {
+  mean(apply(cbind(SIGMAhatInf[i, ], SIGMAhatSup[i, ]), 1, LengthFunct))
+})
+
+#2) Independent stages (no access and no selection)
+THETAhatIND <- PostResults$THETApostUnivar[, 1, ]
+cbind(THETApop, rowMeans(THETAhatIND))
+dist(rbind(THETApop, rowMeans(THETAhatIND)))
+
+RMSEfunct <- function(pop, pars) {
+  RMSE <- (mean(sapply(1:length(pars), function(i) {
+    (pop - pars[i])^2
+  })))^0.5
+  return(RMSE)
+}
+RMSEThetaIND <- sapply(1:length(THETApop), function(i) {
+  RMSEfunct(THETApop[i], PostResults$THETApostUnivar[i, 1, ])
+})
+
+
+MAPEfunct <- function(pop, pars) {
+  MAPE <- mean(sapply(1:length(pars), function(i) {
+    abs((pop - pars[i]) / pop)
+  }))
+  return(MAPE)
+}
+MAPEThetaIND <- sapply(1:length(THETApop), function(i) {
+  MAPEfunct(THETApop[i], PostResults$THETApostUnivar[i, 1, ])
+})
+
+CovFunct <- function(pars) {
+  if (pars[1] <= pars[2] && pars[3] >= pars[2]) {
+    Cov <- 1
+  } else {
+    Cov <- 0
+  }
+  return(Cov)
+}
+CoverageThetaIND <- sapply(1:length(THETApop), function(i) {
+  mean(apply(cbind(PostResults$THETApostUnivar[i, 2, ], THETApop[i], PostResults$THETApostUnivar[i, 3, ]), 1, CovFunct))
+})
+
+LengthFunct <- function(pars) {
+  leng <- abs(pars[2] - pars[1])
+  return(leng)
+}
+IntLengthThetaBPIND <- sapply(1:length(THETApop), function(i) {
+  apply(cbind(PostResults$THETApostUnivar[i, 2, ], PostResults$THETApostUnivar[i, 3, ]), 1, LengthFunct)
+})
+
+IntLengthThetaIND <- sapply(1:length(THETApop), function(i) {
+  mean(apply(cbind(PostResults$THETApostUnivar[i, 2, ], PostResults$THETApostUnivar[i, 3, ]), 1, LengthFunct))
+})
+
+#3) Independent stages (no access and no selection)
+load("PostResultsOneProduct3StagesNOexcrest.RData")
+THETAhatNOexc <- PostResults$THETApost[, 1, ]
+cbind(THETApop, rowMeans(THETAhatNOexc))
+dist(rbind(THETApop, rowMeans(THETAhatNOexc)))
+
+RMSEThetaNOexc <- sapply(1:length(THETApop), function(i) {
+  RMSEfunct(THETApop[i], PostResults$THETApost[i, 1, ])
+})
+
+
+MAPEThetaNOexc <- sapply(1:length(THETApop), function(i) {
+  MAPEfunct(THETApop[i], PostResults$THETApost[i, 1, ])
+})
+
+CoverageThetaNOexc <- sapply(1:length(THETApop), function(i) {
+  mean(apply(cbind(PostResults$THETApost[i, 2, ], THETApop[i], PostResults$THETApost[i, 3, ]), 1, CovFunct))
+})
+
+IntLengthThetaBNOexc <- sapply(1:length(THETApop), function(i) {
+  apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct)
+})
+
+IntLengthThetaNOexc <- sapply(1:length(THETApop), function(i) {
+  mean(apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct))
+})
+
+################### Box plots: Coefficients Uni-product #################
+S <- 100
+a12Base <- THETAhat[2, ] # Baseline
+a12ExAc <- ALPHAhat1[2, ] # Exogenous access
+a12NoEx <- THETAhat[2, ] # No exclusion
+a12Unv <- ALPHAhat1[2, ] # Univariate
+
+BoxPlota12 <- data.frame(c(a12Base, a12ExAc, a12NoEx, a12Unv))
+BoxPlota12$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlota12) <- c("Coefficient", "Model")
+BoxPlota12 <- BoxPlota12 %>%
+  relocate(Model)
+
+means <- BoxPlota12 %>%
+  group_by(Model) %>%
+  summarise(Means = round(mean(Coefficient), 2))
+
+BoxPlot1 <- ggplot(BoxPlota12, aes(x = Model, y = Coefficient)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  geom_hline(yintercept = a1[2], colour = "blue") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
+BoxPlot1
+
 ##### Multivariate probit: Access #####
 load("PostResultsV3BnewV2.RData")
 a1 <- c(1, -1)

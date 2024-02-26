@@ -16,7 +16,7 @@ l1 <- 3; l2 <- 3; l3 <- 3 # Dim(Dj), See below
 L <- l1 + l2 + l3 # Dim(D), See below
 
 ##### Multivariate probit: Access #####
-a1 <- c(1, -1)
+a1 <- c(1, -1, 1)
 a2 <- c(0.8, -1.2)
 a3 <- c(1.1, -0.7)
 rho <- 1
@@ -30,7 +30,7 @@ SIGMA[7:9,1:3] <- t(SIGMA13)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
-b1 <- c(1, 1, -0.5)
+b1 <- c(1, -0.5, 0.5)
 b2 <- c(0.5, 1.5, -1)
 b3 <- c(1, 1, -1)
 # Groups: 3^J
@@ -56,7 +56,7 @@ CombNew <- cbind(Comb[,c(1,3,5)],Comb[,c(2,4,6)]) # First three columns is acces
 # }
 
 ##### SUR: Outcome #####
-d1 <- c(1, 1.7, 1.5)
+d1 <- c(1, -0.5, 1)
 d2 <- c(1, 2, 2)
 d3 <- c(1, 1.5, 1.8)
 
@@ -308,12 +308,11 @@ cn <- detectCores() # 6
 cl <- makeCluster(cn, type = "SOCK")
 registerDoParallel(cl)
 
-W <- cbind(1, rnorm(N))
-z1 <- rnorm(N) 
-# Z <- cbind(W, z1)
-Z <- cbind(1, rnorm(N), rnorm(N))
-# X <- Z
-X <- cbind(1, rnorm(N), rnorm(N, 0, 1))
+wzx <- rnorm(N)
+w1 <- rnorm(N); z1 <- rnorm(N); x1 <- rnorm(N)
+W <- cbind(1, w1, wzx)
+Z <- cbind(1, z1, wzx)
+X <- cbind(1, x1, wzx)
 
 WW <- lapply(1:N, function(i){cbind(kronecker(IJ, t(W[i, ])), WJ)})
 ZZ <- lapply(1:N, function(i){cbind(ZJ1, kronecker(IJ, t(Z[i, ])), ZJ2)})
