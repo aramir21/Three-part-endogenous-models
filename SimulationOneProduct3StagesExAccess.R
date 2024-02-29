@@ -25,7 +25,9 @@ SIGMA <- rho*matrix(c(1,0.0,0.0,0.0,1, 0.8, 0.0, 0.8, 1), 3*J, 3*J)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
-b1 <- c(1, -0.5, 0.5)
+# b1 <- c(1, -0.5, 0.5) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
+# This is because a12 and a13 have a linear dependence to b12 and b13
+b1 <- c(1, -0.5, -1.2) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
 
 # Groups: 3^J
 Comb <- matrix(c(0, 0, 1, 0, 1, 1), byrow = TRUE, 3, 2) # Combination access/use: First column is access and second is use 

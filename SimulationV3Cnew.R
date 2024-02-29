@@ -30,7 +30,9 @@ SIGMA[7:9,1:3] <- t(SIGMA13)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
-b1 <- c(1, -0.5, 0.5)
+# b1 <- c(1, -0.5, 0.5) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
+# This is because a12 and a13 have a linear dependence to b12 and b13
+b1 <- c(1, -0.5, -1.2) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
 b2 <- c(0.5, 1.5, -1)
 b3 <- c(1, 1, -1)
 # Groups: 3^J
@@ -325,7 +327,7 @@ WZX <- lapply(1:N, function(i){rbind(WW[[i]], ZZ[[i]], XX[[i]])})
 
 
 while(rep <= Rep){
-  ticks <- Sys.time()
+  tick <- Sys.time()
   U <- MASS::mvrnorm(N, mu = rep(0, 3*J), Sigma = SIGMA)
   Al1 <- W%*%a1 + U[, 1]
   Al2 <- W%*%a2 + U[, 2]

@@ -24,7 +24,9 @@ SIGMA <- rho*matrix(c(1,0.7,0.6,0.7,1, 0.8, 0.6, 0.8, 1), 3*J, 3*J)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
-b1 <- c(1, -0.5, 0.5)
+# b1 <- c(1, -0.5, 0.5) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
+                      # This is because a12 and a13 have a linear dependence to b12 and b13
+b1 <- c(1, -0.5, -1.2) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
 
 # Groups: 3^J
 Comb <- matrix(c(0, 0, 1, 0, 1, 1), byrow = TRUE, 3, 2) # Combination access/use: First column is access and second is use 
@@ -276,7 +278,9 @@ registerDoParallel(cl)
 wzx <- rnorm(N)
 w1 <- rnorm(N)
 W <- cbind(1, w1, wzx)
+# z1 <- rnorm(N)
 Z <- W # cbind(1, z1, wzx)
+# x1 <- rnorm(N)
 X <- W # cbind(1, x1, wzx)
 
 WW <- lapply(1:N, function(i){cbind(kronecker(IJ, t(W[i, ])), WJ)})
@@ -332,10 +336,19 @@ while(rep <= Rep){
   # 
   # la <- dnorm(W%*%a1)/pnorm(W%*%a1)
   # s2la <- 1 - SIGMA[2,1]^2*la*(W%*%a1+la)
-  # cov(Z[,2]/s2la^0.5,la/s2la^0.5)*SIGMA[2,1]
-  # 
+  # cov(Z[,3]/s2la^0.5,la/s2la^0.5)
+  # cov(Z%*%b1/s2la^0.5,la/s2la^0.5)*SIGMA[2,1]
+  # plot(Z%*%b1/s2la^0.5,SIGMA[2,1]*la/s2la^0.5)
+  # idC1 <- which(C1==1)
+  # cov(Z[idC1,]%*%b1/s2la[idC1]^0.5,la[idC1]/s2la[idC1]^0.5)*SIGMA[2,1]
+  # plot(Z[idC1,]%*%b1/s2la[idC1]^0.5,SIGMA[2,1]*la[idC1]/s2la[idC1]^0.5)
   # lc <- dnorm(Z%*%b1)/pnorm(Z%*%b1)
-  # cov(X[,2],lc)*SIGMA[3,2]
+  # cov(X[,3],lc)*SIGMA[3,2]
+  # cov(X%*%d1,lc)*SIGMA[3,3]
+  # plot(X%*%d1,SIGMA[3,2]*lc)
+  # cov(X[idC1,]%*%d1,lc[idC1,])*SIGMA[3,2]
+  # plot(X[idC1,]%*%d1,SIGMA[3,2]*lc[idC1])
+  
   
   RegA1 <- MCMCprobit(A1 ~ W - 1, mcmc = S - burnin + 10, burnin = burnin, thin = thin,
                       b0 = 0, B0 = 1000^-1*diag(3))

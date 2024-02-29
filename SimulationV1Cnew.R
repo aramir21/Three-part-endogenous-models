@@ -36,7 +36,9 @@ SIGMA <- rho*matrix(c(1,0.5,0.3,0.5, 1, 0.3, 0.3, 0.3, 1), 3*J, 3*J)
 # isSymmetric.matrix(SIGMA)
 # matrixcalc::is.positive.definite(SIGMA)
 ##### Multivariate probit: Selection #####
-b1 <- c(1, -0.5, 0.5)
+# b1 <- c(1, -0.5, 0.5) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
+# This is because a12 and a13 have a linear dependence to b12 and b13
+b1 <- c(1, -0.5, -1.2) # This set of parameters does not achieve good identification in the selection equation without exclusion restrictions. 
 b2 <- c(0.5, 1.5, -1)
 b3 <- c(1, 1, -1)
 

@@ -7,6 +7,7 @@ library(ggplot2)
 library(ggpubr)
 library(reshape2)
 library(data.table)
+library(latex2exp)
 
 
 ##### Uni-product 3 stages ####
@@ -187,7 +188,7 @@ CoverageThetaNOexc <- sapply(1:length(THETApop), function(i) {
   mean(apply(cbind(PostResults$THETApost[i, 2, ], THETApop[i], PostResults$THETApost[i, 3, ]), 1, CovFunct))
 })
 
-IntLengthThetaBNOexc <- sapply(1:length(THETApop), function(i) {
+IntLengthThetaBPNOexc <- sapply(1:length(THETApop), function(i) {
   apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct)
 })
 
@@ -195,12 +196,74 @@ IntLengthThetaNOexc <- sapply(1:length(THETApop), function(i) {
   mean(apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct))
 })
 
+#4) Exogenous access
+load("PostResultsOneProduct3StagesExAccess.RData")
+THETAhatExAc <- rbind(PostResults$ALPHApost[, 1, ], PostResults$THETApost[, 1, ])
+cbind(THETApop, rowMeans(THETAhatExAc))
+dist(rbind(THETApop, rowMeans(THETAhatExAc)))
+
+RMSEThetaExAc <- sapply(1:length(THETApop[4:9]), function(i) {
+  RMSEfunct(THETApop[3+i], PostResults$THETApost[i, 1, ])
+})
+
+MAPEAlphaExAc <- sapply(1:length(THETApop[1:3]), function(i) {
+  MAPEfunct(THETApop[i], PostResults$ALPHApost[i, 1, ])
+})
+
+RMSEThetaExAc <- c(MAPEAlphaExAc, RMSEThetaExAc)
+
+MAPEThetaExAc <- sapply(1:length(THETApop[4:9]), function(i) {
+  MAPEfunct(THETApop[3+i], PostResults$THETApost[i, 1, ])
+})
+
+MAPEAlphaExAc <- sapply(1:length(THETApop[1:3]), function(i) {
+  MAPEfunct(THETApop[i], PostResults$ALPHApost[i, 1, ])
+})
+
+MAPEThetaExAc <- c(MAPEAlphaExAc, MAPEThetaExAc)
+
+CoverageThetaExAc <- sapply(1:length(THETApop[4:9]), function(i) {
+  mean(apply(cbind(PostResults$THETApost[i, 2, ], THETApop[3+i], PostResults$THETApost[i, 3, ]), 1, CovFunct))
+})
+
+CoverageAlphaExAc <- sapply(1:length(THETApop[1:3]), function(i) {
+  mean(apply(cbind(PostResults$ALPHApost[i, 2, ], THETApop[i], PostResults$ALPHApost[i, 3, ]), 1, CovFunct))
+})
+
+CoverageThetaExAc <- c(CoverageAlphaExAc, CoverageThetaExAc)
+
+IntLengthThetaBPExAc <- sapply(1:length(THETApop[4:9]), function(i) {
+  apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct)
+})
+
+IntLengthAlphaBPExAc <- sapply(1:length(THETApop[1:3]), function(i) {
+  apply(cbind(PostResults$ALPHApost[i, 2, ], PostResults$ALPHApost[i, 3, ]), 1, LengthFunct)
+})
+
+IntLengthThetaBPExAc <- cbind(IntLengthAlphaBPExAc, IntLengthThetaBPExAc)
+
+IntLengthThetaExAc <- sapply(1:length(THETApop[4:9]), function(i) {
+  mean(apply(cbind(PostResults$THETApost[i, 2, ], PostResults$THETApost[i, 3, ]), 1, LengthFunct))
+})
+
+IntLengthAlphaExAc <- sapply(1:length(THETApop[1:3]), function(i) {
+  mean(apply(cbind(PostResults$ALPHApost[i, 2, ], PostResults$ALPHApost[i, 3, ]), 1, LengthFunct))
+})
+
+IntLengthThetaExAc <- c(IntLengthAlphaExAc, IntLengthThetaExAc)
+
+#### Summary ######
+cbind( RMSEThetaExAc/RMSETheta, RMSEThetaNOexc/RMSETheta, RMSEThetaIND/RMSETheta)
+cbind(MAPEThetaExAc/MAPETheta, MAPEThetaNOexc/MAPETheta, MAPEThetaIND/MAPETheta)
+cbind(CoverageTheta, CoverageThetaExAc, CoverageThetaNOexc, CoverageThetaIND)
+cbind(IntLengthThetaExAc/IntLengthTheta, IntLengthThetaNOexc/IntLengthTheta, IntLengthThetaIND/IntLengthTheta)
+
 ################### Box plots: Coefficients Uni-product #################
 S <- 100
 a12Base <- THETAhat[2, ] # Baseline
-a12ExAc <- ALPHAhat1[2, ] # Exogenous access
-a12NoEx <- THETAhat[2, ] # No exclusion
-a12Unv <- ALPHAhat1[2, ] # Univariate
+a12ExAc <- THETAhatExAc[2, ] # ALPHAhat1[2, ] # Exogenous access
+a12NoEx <- THETAhatNOexc[2, ] # No exclusion
+a12Unv <- THETAhatIND[2, ] # Univariate
 
 BoxPlota12 <- data.frame(c(a12Base, a12ExAc, a12NoEx, a12Unv))
 BoxPlota12$Model <- c(
@@ -225,8 +288,358 @@ BoxPlot1 <- ggplot(BoxPlota12, aes(x = Model, y = Coefficient)) +
   theme(
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank()
-  )
+  ) +
+  ylab(expression(italic(alpha)[12]))
 BoxPlot1
+
+a13Base <- THETAhat[3, ] # Baseline
+a13ExAc <- THETAhatExAc[3, ] # ALPHAhat1[2, ] # Exogenous access
+a13NoEx <- THETAhatNOexc[3, ] # No exclusion
+a13Unv <- THETAhatIND[3, ] # Univariate
+
+BoxPlota13 <- data.frame(c(a13Base, a13ExAc, a13NoEx, a13Unv))
+BoxPlota13$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlota13) <- c("Coefficient", "Model")
+BoxPlota13 <- BoxPlota13 %>%
+  relocate(Model)
+
+means <- BoxPlota13 %>%
+  group_by(Model) %>%
+  summarise(Means = round(mean(Coefficient), 2))
+
+BoxPlot2 <- ggplot(BoxPlota13, aes(x = Model, y = Coefficient)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  geom_hline(yintercept = a1[3], colour = "blue") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  ylab(expression(italic(alpha)[13]))
+BoxPlot2
+
+b12Base <- THETAhat[5, ] # Baseline
+b12ExAc <- THETAhatExAc[5, ] # ALPHAhat1[2, ] # Exogenous access
+b12NoEx <- THETAhatNOexc[5, ] # No exclusion
+b12Unv <- THETAhatIND[5, ] # Univariate
+
+BoxPlotb12 <- data.frame(c(b12Base, b12ExAc, b12NoEx, b12Unv))
+BoxPlotb12$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotb12) <- c("Coefficient", "Model")
+BoxPlotb12 <- BoxPlotb12 %>%
+  relocate(Model)
+
+means <- BoxPlotb12 %>%
+  group_by(Model) %>%
+  summarise(Means = round(mean(Coefficient), 2))
+
+BoxPlot3 <- ggplot(BoxPlotb12, aes(x = Model, y = Coefficient)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  geom_hline(yintercept = b1[2], colour = "blue") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  ylab(expression(italic(delta)[12]))
+BoxPlot3
+
+
+b13Base <- THETAhat[6, ] # Baseline
+b13ExAc <- THETAhatExAc[6, ] # ALPHAhat1[2, ] # Exogenous access
+b13NoEx <- THETAhatNOexc[6, ] # No exclusion
+b13Unv <- THETAhatIND[6, ] # Univariate
+
+BoxPlotb13 <- data.frame(c(b13Base, b13ExAc, b13NoEx, b13Unv))
+BoxPlotb13$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotb13) <- c("Coefficient", "Model")
+BoxPlotb13 <- BoxPlotb13 %>%
+  relocate(Model)
+
+means <- BoxPlotb13 %>%
+  group_by(Model) %>%
+  summarise(Means = round(mean(Coefficient), 2))
+
+BoxPlot4 <- ggplot(BoxPlotb13, aes(x = Model, y = Coefficient)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  geom_hline(yintercept = b1[3], colour = "blue") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  ylab(expression(italic(delta)[13]))
+BoxPlot4
+
+
+d12Base <- THETAhat[8, ] # Baseline
+d12ExAc <- THETAhatExAc[8, ] # ALPHAhat1[2, ] # Exogenous access
+d12NoEx <- THETAhatNOexc[8, ] # No exclusion
+d12Unv <- THETAhatIND[8, ] # Univariate
+
+BoxPlotd12 <- data.frame(c(d12Base, d12ExAc, d12NoEx, d12Unv))
+BoxPlotd12$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotd12) <- c("Coefficient", "Model")
+BoxPlotd12 <- BoxPlotd12 %>%
+  relocate(Model)
+
+means <- BoxPlotd12 %>%
+  group_by(Model) %>%
+  summarise(Means = round(mean(Coefficient), 2))
+
+BoxPlot5 <- ggplot(BoxPlotd12, aes(x = Model, y = Coefficient)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  geom_hline(yintercept = d1[2], colour = "blue") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  ylab(expression(italic(beta)[12]))
+BoxPlot5
+
+
+d13Base <- THETAhat[9, ] # Baseline
+d13ExAc <- THETAhatExAc[9, ] # ALPHAhat1[2, ] # Exogenous access
+d13NoEx <- THETAhatNOexc[9, ] # No exclusion
+d13Unv <- THETAhatIND[9, ] # Univariate
+
+BoxPlotd13 <- data.frame(c(d13Base, d13ExAc, d13NoEx, d13Unv))
+BoxPlotd13$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotd13) <- c("Coefficient", "Model")
+BoxPlotd13 <- BoxPlotd13 %>%
+  relocate(Model)
+
+means <- BoxPlotd13 %>%
+  group_by(Model) %>%
+  summarise(Means = round(mean(Coefficient), 2))
+
+BoxPlot6 <- ggplot(BoxPlotd13, aes(x = Model, y = Coefficient)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  geom_hline(yintercept = d1[3], colour = "blue") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  ylab(expression(italic(beta)[13]))
+BoxPlot6
+
+ggarrange(BoxPlot1, BoxPlot2, BoxPlot3,
+          BoxPlot4, BoxPlot5, BoxPlot6,
+          labels = c(
+            "A", "B", "C", "D", "E", "F"
+          ),
+          ncol = 2, nrow = 3,
+          legend = "bottom",
+          common.legend = TRUE
+)
+
+ggarrange(BoxPlot2, BoxPlot4, BoxPlot6,
+          labels = c(
+            "A", "B", "C"
+          ),
+          ncol = 3, nrow = 1,
+          legend = "bottom",
+          common.legend = TRUE
+)
+
+
+a12Base <- IntLengthThetaBP[, 2] # Baseline
+a12ExAc <- IntLengthThetaBP[, 2] # ALPHAhat1[2, ] # Exogenous access
+a12NoEx <- IntLengthThetaBPNOexc[, 2] # No exclusion
+a12Unv <- IntLengthThetaBPIND[, 2] # Univariate
+
+BoxPlota12 <- data.frame(c(a12Base, a12ExAc, a12NoEx, a12Unv))
+BoxPlota12$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlota12) <- c("Interval_length", "Model")
+BoxPlota12 <- BoxPlota12 %>%
+  relocate(Model)
+
+BoxPlot7 <- ggplot(BoxPlota12, aes(x = Model, y = Interval_length)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) + ylab("Interval length")
+BoxPlot7
+
+a13Base <- IntLengthThetaBP[, 3] # Baseline
+a13ExAc <- IntLengthThetaBP[, 3] # ALPHAhat1[2, ] # Exogenous access
+a13NoEx <- IntLengthThetaBPNOexc[, 3] # No exclusion
+a13Unv <- IntLengthThetaBPIND[, 3] # Univariate
+
+BoxPlota13 <- data.frame(c(a13Base, a13ExAc, a13NoEx, a13Unv))
+BoxPlota13$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlota13) <- c("Interval_length", "Model")
+BoxPlota13 <- BoxPlota13 %>%
+  relocate(Model)
+
+BoxPlot8 <- ggplot(BoxPlota13, aes(x = Model, y = Interval_length)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) + ylab("Interval length")
+BoxPlot8
+
+b12Base <- IntLengthThetaBP[, 4] # Baseline
+b12ExAc <- IntLengthThetaBP[, 4] # ALPHAhat1[2, ] # Exogenous access
+b12NoEx <- IntLengthThetaBPNOexc[, 4] # No exclusion
+b12Unv <- IntLengthThetaBPIND[, 4] # Univariate
+
+BoxPlotb12 <- data.frame(c(b12Base, b12ExAc, b12NoEx, b12Unv))
+BoxPlotb12$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotb12) <- c("Interval_length", "Model")
+BoxPlotb12 <- BoxPlotb12 %>%
+  relocate(Model)
+
+BoxPlot9 <- ggplot(BoxPlotb12, aes(x = Model, y = Interval_length)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) + ylab("Interval length")
+BoxPlot9
+
+b13Base <- IntLengthThetaBP[, 5] # Baseline
+b13ExAc <- IntLengthThetaBP[, 5] # ALPHAhat1[2, ] # Exogenous access
+b13NoEx <- IntLengthThetaBPNOexc[, 5] # No exclusion
+b13Unv <- IntLengthThetaBPIND[, 5] # Univariate
+
+BoxPlotb13 <- data.frame(c(b13Base, b13ExAc, b13NoEx, b13Unv))
+BoxPlotb13$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotb13) <- c("Interval_length", "Model")
+BoxPlotb13 <- BoxPlotb13 %>%
+  relocate(Model)
+
+BoxPlot10 <- ggplot(BoxPlotb13, aes(x = Model, y = Interval_length)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) + ylab("Interval length")
+BoxPlot10
+
+d12Base <- IntLengthThetaBP[, 8] # Baseline
+d12ExAc <- IntLengthThetaBP[, 8] # ALPHAhat1[2, ] # Exogenous access
+d12NoEx <- IntLengthThetaBPNOexc[, 8] # No exclusion
+d12Unv <- IntLengthThetaBPIND[, 8] # Univariate
+
+BoxPlotd12 <- data.frame(c(d12Base, d12ExAc, d12NoEx, d12Unv))
+BoxPlotd12$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotd12) <- c("Interval_length", "Model")
+BoxPlotd12 <- BoxPlotd12 %>%
+  relocate(Model)
+
+BoxPlot11 <- ggplot(BoxPlotd12, aes(x = Model, y = Interval_length)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) + ylab("Interval length")
+BoxPlot11
+
+
+d13Base <- IntLengthThetaBP[, 9] # Baseline
+d13ExAc <- IntLengthThetaBP[, 9] # ALPHAhat1[2, ] # Exogenous access
+d13NoEx <- IntLengthThetaBPNOexc[, 9] # No exclusion
+d13Unv <- IntLengthThetaBPIND[, 9] # Univariate
+
+BoxPlotd13 <- data.frame(c(d13Base, d13ExAc, d13NoEx, d13Unv))
+BoxPlotd13$Model <- c(
+  rep("Baseline", S), rep("Exogenous Access", S),
+  rep("No Exclusion", S), rep("Univariate", S)
+)
+colnames(BoxPlotd13) <- c("Interval_length", "Model")
+BoxPlotd13 <- BoxPlotd13 %>%
+  relocate(Model)
+
+BoxPlot12 <- ggplot(BoxPlotd13, aes(x = Model, y = Interval_length)) +
+  geom_boxplot(aes(fill = Model)) +
+  stat_summary(
+    fun = mean, colour = "darkred", geom = "point",
+    shape = 18, size = 3, show.legend = FALSE
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) + ylab("Interval length")
+BoxPlot12
+
+ggarrange(BoxPlot8, BoxPlot10, BoxPlot12,
+          labels = c(
+            "A", "B", "C"
+          ),
+          ncol = 3, nrow = 1,
+          legend = "bottom",
+          common.legend = TRUE
+)
 
 ##### Multivariate probit: Access #####
 load("PostResultsV3BnewV2.RData")
