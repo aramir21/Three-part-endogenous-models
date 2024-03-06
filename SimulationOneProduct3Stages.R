@@ -267,7 +267,8 @@ THETApost <- array(0, c(H+K+L, 3, Rep))
 SIGMApost <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
 THETApostNOst <- array(0, c(H+K+L, 3, Rep))
 SIGMApostNOst <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
-
+UniVarMod <- vector(mode='list', length=Rep)
+MultiVarMod <- vector(mode='list', length=Rep)
 
 rep <- 1
 
@@ -357,6 +358,10 @@ while(rep <= Rep){
   ResUniVar <- rbind(ResA1, ResC1, ResY1)
   THETApostUnivar[,,rep] <- ResUniVar
   
+  UniVarMod[[rep]] <- list(RegA1 = RegA1,
+                           RegC1 = RegC1,
+                           RegY1 = RegY1)
+  
   SIGMAp <- SIGMA
   THETAp <- THETA
   Clp <- Cl
@@ -369,7 +374,7 @@ while(rep <= Rep){
                          "Y", "AClp"))
   
   for(s in 1:S){
-    ticks <- Sys.time()
+    # ticks <- Sys.time()
     clusterExport(cl, list("THETAp", "SIGMAp", "AClp"))
     AClp <- t(parSapply(cl, 1:N, function(i){PostACl(m = Gs[i], theta = THETAp, Sigma = SIGMAp, ACli = AClp[i,], Yi = Y[i,], WZXi = WZX[[i]], Ci = C[i,], Ai = A[i,])}))
     SIGMAp <- PostSig(Theta = THETAp, Al = AClp[,1], Cl = AClp[,2], A = A, C = C, Y = Y, WZX = WZX)
@@ -385,9 +390,9 @@ while(rep <= Rep){
     ThetaPostNOst[s,] <- THETAp
     SigmaPostNOst[,,s] <- SIGMAp 
     AClPost[,,s] <- AClp
-    tocks <- Sys.time()
-    print(tocks-ticks)
-    print(s)
+    # tocks <- Sys.time()
+    # print(tocks-ticks)
+    # print(s)
   }
   
   thetaHat <- coda::mcmc(ThetaPost[findraws,])
@@ -409,6 +414,13 @@ while(rep <= Rep){
   PostResults <- list(THETApostUnivar = THETApostUnivar, THETApost = THETApost, SIGMApost = SIGMApost, THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
   save(PostResults, file = "PostResultsOneProduct3Stages.RData")
+  
+  MultiVarMod[[rep]] <- list(ThetaPost = ThetaPost[findraws,],
+                             ThetaPostNOst = ThetaPostNOst[findraws,],
+                             SigmaPost = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPost[,,s])})),
+                             SigmaPostNOst = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPostNOst[,,s])})))
+  save(MultiVarMod, file = "PostDrawsOneProduct3Stages.RData")
+  
   print(rep)
   tock <- Sys.time()
   print(tock-tick)
@@ -416,5 +428,3 @@ while(rep <= Rep){
 }
 
 stopCluster(cl)
-
-# load("PostResults.RData")

@@ -364,7 +364,7 @@ THETApostNOst <- array(0, c(K+L, 3, Rep))
 SIGMApostNOst <- array(0, c(2*J*(2*J+1)/2, 3, Rep))
 OMEGApostNOst <- array(0, c(J*(J+1)/2, 3, Rep))
 
-
+MultiVarMod <- vector(mode='list', length=Rep)
 rep <- 1
 
 cn <- detectCores() # 6
@@ -517,6 +517,14 @@ while(rep <= Rep){
                       THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
   save(PostResults, file = "PostResultsJ3ExAccess.RData")
+  
+  MultiVarMod[[rep]] <- list(ThetaPost = ThetaPost[findraws,],
+                             ThetaPostNOst = ThetaPostNOst[findraws,],
+                             SigmaPost = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPost[,,s])})),
+                             SigmaPostNOst = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPostNOst[,,s])})))
+  save(MultiVarMod, file = "PostDrawsPostResultsJ3ExAccess.RData")
+  
+  
   print(rep)
   tock <- Sys.time()
   print(tock-tick)

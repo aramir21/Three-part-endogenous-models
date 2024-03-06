@@ -288,7 +288,7 @@ PostACl <- function(m, theta, Sigma, ACli, Yi, Ai, Ci, WZXi){
 # cbind(ACli, ACliPost)
 
 #### Gibbs sampler: Implementation ####
-S <- 5000 # 1100
+S <- 5000 # 
 thin <- 10
 burnin <- 1000 + thin
 ThetaPost <- matrix(NA, S, H + K + L)
@@ -305,7 +305,8 @@ THETApost <- array(0, c(H+K+L, 3, Rep))
 SIGMApost <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
 THETApostNOst <- array(0, c(H+K+L, 3, Rep))
 SIGMApostNOst <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
-
+UniVarMod <- vector(mode='list', length=Rep)
+MultiVarMod <- vector(mode='list', length=Rep)
 
 rep <- 1
 
@@ -423,6 +424,10 @@ while(rep <= Rep){
   ResUniVar <- rbind(ResA1, ResA2, ResA3, ResC1, ResC2, ResC3, ResY1, ResY2, ResY3)
   THETApostUnivar[,,rep] <- ResUniVar
   
+  UniVarMod[[rep]] <- list(RegA1 = RegA1, RegA2 = RegA2, RegA3 = RegA3,
+                           RegC1 = RegC1, RegC2 = RegC2, RegC3 = RegC3,
+                           RegY1 = RegY1, RegY2 = RegY2, RegY3 = RegY3)
+  
   
   SIGMAp <- SIGMA
   THETAp <- THETA
@@ -480,6 +485,13 @@ while(rep <= Rep){
   PostResults <- list(THETApostUnivar = THETApostUnivar, THETApost = THETApost, SIGMApost = SIGMApost, THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
   save(PostResults, file = "PostResultsJ3Baseline.RData")
+  
+  MultiVarMod[[rep]] <- list(ThetaPost = ThetaPost[findraws,],
+                             ThetaPostNOst = ThetaPostNOst[findraws,],
+                             SigmaPost = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPost[,,s])})),
+                             SigmaPostNOst = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPostNOst[,,s])})))
+  save(MultiVarMod, file = "PostDrawsPostResultsJ3Baseline.RData")
+  
   print(rep)
   tock <- Sys.time()
   print(tock-tick)

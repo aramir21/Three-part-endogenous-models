@@ -15,7 +15,7 @@ library(latex2exp)
 load("PostResultsOneProduct3Stages.RData")
 J <- 1
 a1 <- c(1, -1, 1)
-b1 <- c(1, -0.5, 0.5)
+b1 <- c(1, -0.5, -1.2)
 d1 <- c(1, -0.5, 1)
 
 rho <- 1

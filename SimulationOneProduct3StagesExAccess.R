@@ -202,7 +202,7 @@ THETApost <- array(0, c(K+L, 3, Rep))
 SIGMApost <- array(0, c(3, 3, Rep))
 THETApostNOst <- array(0, c(K+L, 3, Rep))
 SIGMApostNOst <- array(0, c(3, 3, Rep))
-
+MultiVarMod <- vector(mode='list', length=Rep)
 
 rep <- 1
 
@@ -340,6 +340,13 @@ while(rep <= Rep){
   PostResults <- list(ALPHApost = ALPHApost, THETApost = THETApost, SIGMApost = SIGMApost, THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
   save(PostResults, file = "PostResultsOneProduct3StagesExAccess.RData")
+  
+  MultiVarMod[[rep]] <- list(ThetaPost = ThetaPost[findraws,],
+                             ThetaPostNOst = ThetaPostNOst[findraws,],
+                             SigmaPost = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPost[,,s])})),
+                             SigmaPostNOst = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPostNOst[,,s])})))
+  save(MultiVarMod, file = "PostDrawsOneProduct3StagesExAccess.RData")
+  
   print(rep)
   tock <- Sys.time()
   print(tock-tick)

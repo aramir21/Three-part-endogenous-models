@@ -303,7 +303,7 @@ THETApost <- array(0, c(H+K+L, 3, Rep))
 SIGMApost <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
 THETApostNOst <- array(0, c(H+K+L, 3, Rep))
 SIGMApostNOst <- array(0, c(3*J*(3*J+1)/2, 3, Rep))
-
+MultiVarMod <- vector(mode='list', length=Rep)
 
 rep <- 1
 
@@ -431,6 +431,13 @@ while(rep <= Rep){
   PostResults <- list(THETApost = THETApost, SIGMApost = SIGMApost, THETApostNOst = THETApostNOst, SIGMApostNOst = SIGMApostNOst)
   
   save(PostResults, file = "PostResultsJ3NOexcrestrictions.RData")
+  
+  MultiVarMod[[rep]] <- list(ThetaPost = ThetaPost[findraws,],
+                             ThetaPostNOst = ThetaPostNOst[findraws,],
+                             SigmaPost = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPost[,,s])})),
+                             SigmaPostNOst = t(sapply(findraws, function(s){matrixcalc::vech(SigmaPostNOst[,,s])})))
+  save(MultiVarMod, file = "PostDrawsPostResultsJ3NOexcrestrictions.RData")
+  
   print(rep)
   tock <- Sys.time()
   print(tock-tick)
